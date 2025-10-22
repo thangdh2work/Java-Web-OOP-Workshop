@@ -16,21 +16,86 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
-      - name: Build & Test with Coverage (JaCoCo)
+
+      - name: Build & Test (with JaCoCo)
         run: |
           mvn -q -B -DskipTests dependency:go-offline
           mvn -q -B test
+          mvn -q -B jacoco:report
+
+      - name: Publish Test & Coverage Summary
+        if: always()
+        run: |
+          python3 - << 'PY'
+          import glob, xml.etree.ElementTree as ET, os
+          totals={'tests':0,'failures':0,'errors':0,'skipped':0,'time':0.0}
+          for p in glob.glob('target/surefire-reports/*.xml'):
+              try:
+                  root=ET.parse(p).getroot()
+              except Exception:
+                  continue
+              suites=[root] if root.tag=='testsuite' else root.findall('testsuite')
+              for ts in suites:
+                  a=ts.attrib
+                  totals['tests']+=int(a.get('tests',0))
+                  totals['failures']+=int(a.get('failures',0))
+                  totals['errors']+=int(a.get('errors',0))
+                  totals['skipped']+=int(a.get('skipped',0))
+                  try: totals['time']+=float(a.get('time',0.0))
+                  except: pass
+          passed = totals['tests'] - totals['failures'] - totals['errors'] - totals['skipped']
+          cov_path='target/site/jacoco/jacoco.xml'
+          cov={}
+          if os.path.exists(cov_path):
+              try:
+                  r=ET.parse(cov_path).getroot()
+                  def pct(t):
+                      m=c=0
+                      for co in r.findall('.//counter'):
+                          if co.attrib.get('type')==t:
+                              m += int(co.attrib.get('missed','0'))
+                              c += int(co.attrib.get('covered','0'))
+                      s=m+c
+                      return (100.0*c/s) if s>0 else 0.0
+                  cov['LINE']=pct('LINE')
+                  cov['BRANCH']=pct('BRANCH')
+                  cov['INSTRUCTION']=pct('INSTRUCTION')
+              except Exception:
+                  pass
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a',encoding='utf-8') as f:
+              f.write("# 🧪 Test & Coverage Summary\n\n")
+              f.write("| Total | Passed | Failed | Errors | Skipped | Duration (s) |\n")
+              f.write("| ---: | ---: | ---: | ---: | ---: | ---: |\n")
+              f.write(f"| {totals['tests']} | {passed} | {totals['failures']} | {totals['errors']} | {totals['skipped']} | {totals['time']:.2f} |\n\n")
+              if cov:
+                  f.write("## 📈 JaCoCo Coverage\n\n")
+                  f.write("| Metric | Percent |\n|---|---:|\n")
+                  for k in ['LINE','BRANCH','INSTRUCTION']:
+                      if k in cov: f.write(f"| {k.title()} | {cov[k]:.2f}% |\n")
+                  f.write("\n")
+              else:
+                  f.write("> ⚠️ Không tìm thấy `target/site/jacoco/jacoco.xml` — hãy chắc `mvn jacoco:report` đã chạy.\n\n")
+          PY
+
       - name: Archive coverage report (JaCoCo)
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: jacoco-report
           path: target/site/jacoco/
+
+      - name: Archive Surefire reports (JUnit XML)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: target/surefire-reports/
 
   build-and-push-image:
     needs: build-test-coverage
@@ -167,8 +232,6 @@ jobs:
 
           summarize "📁 Filesystem scan (repo workspace)" trivy-fs.json
           summarize "🐳 Image scan (ghcr.io/${GITHUB_REPOSITORY}:${GITHUB_SHA})" trivy-image.json
-
-          echo "> 🔗 Xem toàn bộ alerts trong **Security → Code scanning** (đã upload SARIF)." >> $GITHUB_STEP_SUMMARY
 
   update-deployment:
     runs-on: ubuntu-latest
