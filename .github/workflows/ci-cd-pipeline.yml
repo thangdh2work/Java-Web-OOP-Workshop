@@ -4,30 +4,33 @@ on:
   push:
     branches: ["main"]
   pull_request:
+  paths:
+    - src/**
+    - Dockerfile
 
 jobs:
-  # build-test-coverage:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - name: Set up JDK 17
-  #       uses: actions/setup-java@v4
-  #       with:
-  #         distribution: temurin
-  #         java-version: 17
-  #     - name: Build & Test with Coverage (JaCoCo)
-  #       run: |
-  #         mvn -q -B -DskipTests dependency:go-offline
-  #         mvn -q -B test
-  #     - name: Archive coverage report (JaCoCo)
-  #       if: always()
-  #       uses: actions/upload-artifact@v4
-  #       with:
-  #         name: jacoco-report
-  #         path: target/site/jacoco/
+  build-test-coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Build & Test with Coverage (JaCoCo)
+        run: |
+          mvn -q -B -DskipTests dependency:go-offline
+          mvn -q -B test
+      - name: Archive coverage report (JaCoCo)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report
+          path: target/site/jacoco/
 
   build-and-push-image:
-    # needs: build-test-coverage
+    needs: build-test-coverage
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -47,44 +50,44 @@ jobs:
           push: true
           tags: ghcr.io/${{ github.repository }}:${{ github.sha }}
 
-  # trivy-scan:
-  #   needs: build-and-push-image
-  #   runs-on: ubuntu-latest
-  #   permissions:
-  #     contents: write
-  #     security-events: write
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - name: Run Trivy FS scan
-  #       uses: aquasecurity/trivy-action@0.24.0
-  #       with:
-  #         scan-type: "fs"
-  #         ignore-unfixed: true
-  #         format: "sarif"
-  #         output: "trivy-fs.sarif"
-  #         severity: "HIGH,CRITICAL"
-  #     - name: Run Trivy Image scan
-  #       uses: aquasecurity/trivy-action@0.24.0
-  #       with:
-  #         image-ref: "ghcr.io/${{ github.repository }}:${{ github.sha }}"
-  #         format: "sarif"
-  #         output: "trivy-image.sarif"
-  #         ignore-unfixed: true
-  #         severity: "HIGH,CRITICAL"
-  #     - name: Upload SARIF (Image)
-  #       uses: github/codeql-action/upload-sarif@v3
-  #       with:
-  #         sarif_file: trivy-image.sarif
-  #         category: "image-scan"
-  #     - name: Upload SARIF (FS)
-  #       uses: github/codeql-action/upload-sarif@v3
-  #       with:
-  #         sarif_file: trivy-fs.sarif
-  #         category: "fs-scan"
+  trivy-scan:
+    needs: build-and-push-image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Trivy FS scan
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          scan-type: "fs"
+          ignore-unfixed: true
+          format: "sarif"
+          output: "trivy-fs.sarif"
+          severity: "HIGH,CRITICAL"
+      - name: Run Trivy Image scan
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          image-ref: "ghcr.io/${{ github.repository }}:${{ github.sha }}"
+          format: "sarif"
+          output: "trivy-image.sarif"
+          ignore-unfixed: true
+          severity: "HIGH,CRITICAL"
+      - name: Upload SARIF (Image)
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-image.sarif
+          category: "image-scan"
+      - name: Upload SARIF (FS)
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-fs.sarif
+          category: "fs-scan"
 
   update-deployment:
     runs-on: ubuntu-latest
-    needs: build-and-push-image
+    needs: trivy-scan
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
