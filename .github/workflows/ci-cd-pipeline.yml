@@ -87,9 +87,10 @@ jobs:
     needs: build-and-push-image
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
         with:
-          fetch-depth: 0
+          repository: "${GITHUB_REPOSITORY}"
+          token: ${{ secrets.GIT_PAT }}
 
       - name: Ensure file exists
         run: |
@@ -109,18 +110,14 @@ jobs:
           sed -n '1,200p' "$FILE"
 
       - name: Commit and push change
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           FILE="deploy/studentmgr/deployment.yaml"
           if git status --porcelain | grep -q "$FILE"; then
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git config user.email thangdh2work@gmail.com
+            git config user.name thangdh2work
             git add "$FILE"
             git commit -m "chore(cd): update deployment image tag to ${{ github.sha }}"
-            BRANCH="${GITHUB_REF#refs/heads/}"
-            git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-            git push origin "HEAD:${BRANCH}"
+            git push origin main
           else
             echo "No changes to commit."
           fi
