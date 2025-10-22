@@ -18,7 +18,7 @@ spec:
         - name: ghcr-secret
       containers:
         - name: studentmgr
-          image: ghcr.io/thangdh2work/java-web-oop-workshop:6587d4dcbeaa47675e7e478dcf374863672da770
+          image: ghcr.io/thangdh2work/java-web-oop-workshop:84f16218611bbb96a823223396d2cb3090af1a02
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
