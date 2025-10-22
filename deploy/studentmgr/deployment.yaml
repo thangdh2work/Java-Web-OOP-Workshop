@@ -26,15 +26,15 @@ spec:
             - name: SPRING_PROFILES_ACTIVE
               value: "mysql"
             - name: MYSQL_HOST
-              value: "mysql-service"
-            - name: MYSQL_PORT
+              value: "10.100.3.9"
+            - name: DB_PORT
               value: "3306"
-            - name: MYSQL_DATABASE
+            - name: DB_NAME
               value: "studentdb"
-            - name: MYSQL_USER
-              value: "root"
-            - name: MYSQL_PASSWORD
-              value: "iOVyTaJoOfhZT1zA"
+            - name: DB_USER
+              value: "studentdb"
+            - name: DB_PASSWORD
+              value: "Sysp3xVbCom3cNEB4"
           livenessProbe:
             httpGet:
               path: /healthz
