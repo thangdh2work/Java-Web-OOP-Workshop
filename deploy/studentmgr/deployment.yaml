@@ -14,14 +14,27 @@ spec:
       labels:
         app: studentmgr
     spec:
+      imagePullSecrets:
+        - name: ghcr-secret
       containers:
         - name: studentmgr
           image: ghcr.io/thangdh2work/java-web-oop-workshop:55d39a9e2fb47d8511498e84c0b082563d4885f5
           imagePullPolicy: Always
-          imagePullSecrets:
-            - name: ghcr-secret
           ports:
             - containerPort: 8080
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: "mysql"
+            - name: MYSQL_HOST
+              value: "mysql-service"
+            - name: MYSQL_PORT
+              value: "3306"
+            - name: MYSQL_DATABASE
+              value: "studentdb"
+            - name: MYSQL_USER
+              value: "root"
+            - name: MYSQL_PASSWORD
+              value: "iOVyTaJoOfhZT1zA"
           livenessProbe:
             httpGet:
               path: /healthz
