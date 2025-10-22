@@ -25,8 +25,8 @@ spec:
           env:
             - name: SPRING_PROFILES_ACTIVE
               value: "mysql"
-            - name: MYSQL_HOST
-              value: "10.100.3.9"
+            - name: DB_HOST
+              value: "mysql-service"
             - name: DB_PORT
               value: "3306"
             - name: DB_NAME
