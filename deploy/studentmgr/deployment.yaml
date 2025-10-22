@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: studentmgr
-          image: ghcr.io/thangdh2work/Java-Web-OOP-Workshop:latest
+          image: ghcr.io/thangdh2work/java-web-oop-workshop:latest
           imagePullPolicy: Always
           imagePullSecrets:
             - name: ghcr-secret
