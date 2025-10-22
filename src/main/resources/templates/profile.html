@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{fragments/layout :: layout (~{::section})}">
+<section>
+  <h2 th:text="#{profile.heading(${user.fullName})}">My Profile</h2>
+  <div class="card">
+    <div class="grid-2">
+      <div><b th:text="#{profile.username}">Username</b><div th:text="${user.username}"></div></div>
+      <div><b th:text="#{profile.fullname}">Full name</b><div th:text="${user.fullName}"></div></div>
+      <div><b th:text="#{profile.email}">Email</b><div th:text="${user.email}"></div></div>
+      <div><b th:text="#{profile.role}">Role</b><div th:text="${user.role}"></div></div>
+    </div>
+  </div>
+</section>
+</html>

@@ -1,0 +1,43 @@
+version: "3.9"
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: mysql
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    environment:
+      - MYSQL_ROOT_PASSWORD=secret
+      - MYSQL_DATABASE=studentdb
+      - MYSQL_USER=appuser
+      - MYSQL_PASSWORD=apppass
+      - TZ=Asia/Ho_Chi_Minh
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: [ "CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$${MYSQL_ROOT_PASSWORD} --silent" ]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    restart: unless-stopped
+
+  student-mgr:
+    build: .
+    container_name: student-mgr
+    environment:
+      - TZ=Asia/Ho_Chi_Minh
+      - SPRING_PROFILES_ACTIVE=mysql
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_NAME=studentdb
+      - DB_USER=appuser
+      - DB_PASS=apppass
+    ports:
+      - "8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  mysql-data:

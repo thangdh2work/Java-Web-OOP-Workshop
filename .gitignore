@@ -1,0 +1,19 @@
+
+# Maven
+target/
+.mvn/
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.project
+.classpath
+.settings/
+# Logs
+*.log
+# OS
+.DS_Store
+Thumbs.db
+# Others
+*.swp
