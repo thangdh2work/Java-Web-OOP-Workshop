@@ -18,7 +18,7 @@ public class DataLoader {
                 admin.setUsername("admin");
                 admin.setPassword(encoder.encode("123456"));
                 admin.setFullName("Administrator");
-                admin.setEmail("admin@example.com");
+                admin.setEmail("admin@minnn.tech");
                 admin.setRole(Role.ADMIN);
                 repo.save(admin);
             }
