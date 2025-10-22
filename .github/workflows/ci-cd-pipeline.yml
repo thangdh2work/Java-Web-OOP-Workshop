@@ -95,12 +95,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
-          repository: "thangdh2work/java-web-oop-workshop"
+          repository: "devops-infrastructure-workshop"
           token: ${{ secrets.GIT_PAT }}
 
       - name: Ensure file exists
         run: |
-          FILE="deploy/studentmgr/deployment.yaml"
+          FILE="studentmgr/deployment.yaml"
           if [ ! -f "$FILE" ]; then
             echo "deployment.yaml not found"
             exit 1
@@ -110,14 +110,14 @@ jobs:
         env:
           TAG: ${{ github.sha }}
         run: |
-          FILE="deploy/studentmgr/deployment.yaml"
+          FILE="studentmgr/deployment.yaml"
           sed -E -i "s#(image:[[:space:]]*[^:]+:)[^[:space:],]+#\1${TAG}#g" "$FILE"
           echo "Updated $FILE:"
           sed -n '1,200p' "$FILE"
 
       - name: Commit and push change
         run: |
-          FILE="deploy/studentmgr/deployment.yaml"
+          FILE="studentmgr/deployment.yaml"
           if git status --porcelain | grep -q "$FILE"; then
             git config user.email thangdh2work@gmail.com
             git config user.name thangdh2work
