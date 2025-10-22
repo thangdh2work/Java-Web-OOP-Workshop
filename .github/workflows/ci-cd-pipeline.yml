@@ -95,7 +95,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
-          repository: "devops-infrastructure-workshop"
+          repository: "thangdh2work/devops-infrastructure-workshop"
           token: ${{ secrets.GIT_PAT }}
 
       - name: Ensure file exists
