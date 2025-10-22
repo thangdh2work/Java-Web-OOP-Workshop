@@ -23,3 +23,4 @@ SPRING_PROFILES_ACTIVE=mysql mvn spring-boot:run
 - `/password/change` – đổi mật khẩu
 - `/admin/students` – trang admin (chỉ ROLE_ADMIN)
 - `/swagger-ui.html` – Swagger UI
+- `/healthz` – Health check

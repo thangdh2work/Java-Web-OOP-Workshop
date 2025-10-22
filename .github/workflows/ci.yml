@@ -1,9 +1,8 @@
-
-name: ci
+name: CI - build, test, coverage, image scan
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
 
 jobs:
@@ -46,7 +45,7 @@ jobs:
         with:
           context: .
           push: true
-          tags: ghcr.io/${{ github.repository }}:latest
+          tags: ghcr.io/${{ github.repository }}:${{ github.sha }}
 
   trivy-scan:
     needs: build-and-push-image
@@ -59,19 +58,19 @@ jobs:
       - name: Run Trivy FS scan
         uses: aquasecurity/trivy-action@0.24.0
         with:
-          scan-type: 'fs'
+          scan-type: "fs"
           ignore-unfixed: true
-          format: 'sarif'
-          output: 'trivy-fs.sarif'
-          severity: 'HIGH,CRITICAL'
+          format: "sarif"
+          output: "trivy-fs.sarif"
+          severity: "HIGH,CRITICAL"
       - name: Run Trivy Image scan
         uses: aquasecurity/trivy-action@0.24.0
         with:
-          image-ref: 'ghcr.io/${{ github.repository }}:latest'
-          format: 'sarif'
-          output: 'trivy-image.sarif'
+          image-ref: "ghcr.io/${{ github.repository }}:${{ github.sha }}"
+          format: "sarif"
+          output: "trivy-image.sarif"
           ignore-unfixed: true
-          severity: 'HIGH,CRITICAL'
+          severity: "HIGH,CRITICAL"
       - name: Upload SARIF (Image)
         uses: github/codeql-action/upload-sarif@v3
         with:

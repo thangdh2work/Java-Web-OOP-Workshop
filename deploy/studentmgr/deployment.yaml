@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: studentmgr
+  labels:
+    app: studentmgr
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: studentmgr
+  template:
+    metadata:
+      labels:
+        app: studentmgr
+    spec:
+      containers:
+        - name: studentmgr
+          image: ghcr.io/thangdh2work/Java-Web-OOP-Workshop:latest
+          imagePullPolicy: Always
+          imagePullSecrets:
+            - name: ghcr-secret
+          ports:
+            - containerPort: 8080
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
