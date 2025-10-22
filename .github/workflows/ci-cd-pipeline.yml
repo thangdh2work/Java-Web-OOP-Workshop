@@ -89,7 +89,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
-          repository: "${GITHUB_REPOSITORY}"
+          repository: "thangdh2work/java-web-oop-workshop"
           token: ${{ secrets.GIT_PAT }}
 
       - name: Ensure file exists
