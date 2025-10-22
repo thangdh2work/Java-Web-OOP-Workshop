@@ -53,123 +53,122 @@ jobs:
           push: true
           tags: ghcr.io/${{ github.repository }}:${{ github.sha }}
 
-trivy-scan:
-  needs: build-and-push-image
-  runs-on: ubuntu-latest
-  permissions:
-    contents: write
-    security-events: write
-  steps:
-    - uses: actions/checkout@v4
-    - name: Run Trivy FS scan (SARIF)
-      uses: aquasecurity/trivy-action@0.24.0
-      with:
-        scan-type: "fs"
-        ignore-unfixed: true
-        format: "sarif"
-        output: "trivy-fs.sarif"
-        severity: "HIGH,CRITICAL"
+  trivy-scan:
+    needs: build-and-push-image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Trivy FS scan (SARIF)
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          scan-type: "fs"
+          ignore-unfixed: true
+          format: "sarif"
+          output: "trivy-fs.sarif"
+          severity: "HIGH,CRITICAL"
 
-    - name: Run Trivy Image scan (SARIF)
-      uses: aquasecurity/trivy-action@0.24.0
-      with:
-        image-ref: "ghcr.io/${{ github.repository }}:${{ github.sha }}"
-        format: "sarif"
-        output: "trivy-image.sarif"
-        ignore-unfixed: true
-        severity: "HIGH,CRITICAL"
+      - name: Run Trivy Image scan (SARIF)
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          image-ref: "ghcr.io/${{ github.repository }}:${{ github.sha }}"
+          format: "sarif"
+          output: "trivy-image.sarif"
+          ignore-unfixed: true
+          severity: "HIGH,CRITICAL"
 
-    - name: Upload SARIF (Image)
-      uses: github/codeql-action/upload-sarif@v3
-      with:
-        sarif_file: trivy-image.sarif
-        category: "image-scan"
+      - name: Upload SARIF (Image)
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-image.sarif
+          category: "image-scan"
 
-    - name: Upload SARIF (FS)
-      uses: github/codeql-action/upload-sarif@v3
-      with:
-        sarif_file: trivy-fs.sarif
-        category: "fs-scan"
+      - name: Upload SARIF (FS)
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-fs.sarif
+          category: "fs-scan"
 
-    # --- Tạo JSON để render Job Summary (không làm fail pipeline) ---
-    - name: Run Trivy FS scan (JSON for summary)
-      uses: aquasecurity/trivy-action@0.24.0
-      with:
-        scan-type: "fs"
-        format: "json"
-        output: "trivy-fs.json"
-        ignore-unfixed: true
-        severity: "UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL"
-        hide-progress: true
-        exit-code: "0"
+      - name: Run Trivy FS scan (JSON for summary)
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          scan-type: "fs"
+          format: "json"
+          output: "trivy-fs.json"
+          ignore-unfixed: true
+          severity: "UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL"
+          hide-progress: true
+          exit-code: "0"
 
-    - name: Run Trivy Image scan (JSON for summary)
-      uses: aquasecurity/trivy-action@0.24.0
-      with:
-        image-ref: "ghcr.io/${{ github.repository }}:${{ github.sha }}"
-        format: "json"
-        output: "trivy-image.json"
-        ignore-unfixed: true
-        severity: "UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL"
-        vuln-type: "os,library"
-        hide-progress: true
-        exit-code: "0"
+      - name: Run Trivy Image scan (JSON for summary)
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          image-ref: "ghcr.io/${{ github.repository }}:${{ github.sha }}"
+          format: "json"
+          output: "trivy-image.json"
+          ignore-unfixed: true
+          severity: "UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL"
+          vuln-type: "os,library"
+          hide-progress: true
+          exit-code: "0"
 
-    - name: Build GitHub Actions Job Summary
-      run: |
-        echo "# 🔍 Trivy Security Report" >> $GITHUB_STEP_SUMMARY
-        echo "_Commit: \`${GITHUB_SHA}\`  •  Image: \`ghcr.io/${GITHUB_REPOSITORY}:${GITHUB_SHA}\`_" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-
-        summarize () {
-          local title="$1"; local file="$2"
-          echo "## ${title}" >> $GITHUB_STEP_SUMMARY
+      - name: Build GitHub Actions Job Summary
+        run: |
+          echo "# 🔍 Trivy Security Report" >> $GITHUB_STEP_SUMMARY
+          echo "_Commit: \`${GITHUB_SHA}\`  •  Image: \`ghcr.io/${GITHUB_REPOSITORY}:${GITHUB_SHA}\`_" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Severity | Count |" >> $GITHUB_STEP_SUMMARY
-          echo "|---|---:|" >> $GITHUB_STEP_SUMMARY
-          for sev in CRITICAL HIGH MEDIUM LOW UNKNOWN; do
-            cnt=$(jq -r '
-              [
-                .Results[]?
-                | .Vulnerabilities[]?
-                | select(.Severity=="'"$sev"'")
-              ] | length
-            ' "$file")
-            echo "| $sev | $cnt |" >> $GITHUB_STEP_SUMMARY
-          done
 
-          # Top 10 issues (gọn gàng)
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "<details><summary>Top 10 findings</summary>" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Severity | Package | Installed | Fixed | ID | Title |" >> $GITHUB_STEP_SUMMARY
-          echo "|---|---|---|---|---|---|" >> $GITHUB_STEP_SUMMARY
-          jq -r '
-            .Results[]?
-            | .Vulnerabilities[]?
-            | [
-                .Severity,
-                .PkgName,
-                (.InstalledVersion // "-"),
-                (.FixedVersion // "-"),
-                .VulnerabilityID,
-                (.Title // .Description // "-" | gsub("\\n"; " "))
-              ]
-            | @tsv
-          ' "$file" \
-          | head -n 10 \
-          | while IFS=$'\t' read -r sev pkg inst fixed vid title; do
-              printf "| %s | %s | %s | %s | %s | %s |\n" "$sev" "$pkg" "$inst" "$fixed" "$vid" "${title:0:120}"
-            done >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "</details>" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-        }
+          summarize () {
+            local title="$1"; local file="$2"
+            echo "## ${title}" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "| Severity | Count |" >> $GITHUB_STEP_SUMMARY
+            echo "|---|---:|" >> $GITHUB_STEP_SUMMARY
+            for sev in CRITICAL HIGH MEDIUM LOW UNKNOWN; do
+              cnt=$(jq -r '
+                [
+                  .Results[]?
+                  | .Vulnerabilities[]?
+                  | select(.Severity=="'"$sev"'")
+                ] | length
+              ' "$file")
+              echo "| $sev | $cnt |" >> $GITHUB_STEP_SUMMARY
+            done
 
-        summarize "📁 Filesystem scan (repo workspace)" trivy-fs.json
-        summarize "🐳 Image scan (ghcr.io/${GITHUB_REPOSITORY}:${GITHUB_SHA})" trivy-image.json
+            # Top 10 issues (gọn gàng)
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "<details><summary>Top 10 findings</summary>" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "| Severity | Package | Installed | Fixed | ID | Title |" >> $GITHUB_STEP_SUMMARY
+            echo "|---|---|---|---|---|---|" >> $GITHUB_STEP_SUMMARY
+            jq -r '
+              .Results[]?
+              | .Vulnerabilities[]?
+              | [
+                  .Severity,
+                  .PkgName,
+                  (.InstalledVersion // "-"),
+                  (.FixedVersion // "-"),
+                  .VulnerabilityID,
+                  (.Title // .Description // "-" | gsub("\\n"; " "))
+                ]
+              | @tsv
+            ' "$file" \
+            | head -n 10 \
+            | while IFS=$'\t' read -r sev pkg inst fixed vid title; do
+                printf "| %s | %s | %s | %s | %s | %s |\n" "$sev" "$pkg" "$inst" "$fixed" "$vid" "${title:0:120}"
+              done >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "</details>" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          }
 
-        echo "> 🔗 Xem toàn bộ alerts trong **Security → Code scanning** (đã upload SARIF)." >> $GITHUB_STEP_SUMMARY
+          summarize "📁 Filesystem scan (repo workspace)" trivy-fs.json
+          summarize "🐳 Image scan (ghcr.io/${GITHUB_REPOSITORY}:${GITHUB_SHA})" trivy-image.json
+
+          echo "> 🔗 Xem toàn bộ alerts trong **Security → Code scanning** (đã upload SARIF)." >> $GITHUB_STEP_SUMMARY
 
   update-deployment:
     runs-on: ubuntu-latest

@@ -1,6 +1,5 @@
 package com.example.studentmgr.config;
 
-import com.example.studentmgr.domain.User;
 import com.example.studentmgr.repo.UserRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
