@@ -1,26 +1,47 @@
 # Student Manager – Enhanced (i18n + MySQL + Docker)
 
-## Chạy bằng Docker + MySQL
+## Run with Docker + MySQL
 ```bash
 docker compose up --build
-# mở http://localhost:8080
+# open http://localhost:8080
 # admin / 123456
 ```
 
-- App chạy với profile **mysql** (kết nối service `mysql` trong compose).
-- Đổi VI/EN bằng nút ở **navbar** (sau khi login) và ở **login page**.
+- The app runs with the **mysql** profile (connects to the `mysql` service in compose).
+- Switch VI/EN using the button in the **navbar** (after login) and on the **login page**.
 
-## Chạy với MySQL local (không dùng Docker DB)
-1) Cài MySQL và tạo DB `studentdb`, user `appuser/apppass` (tuỳ chỉnh).
-2) Chạy app với profile `mysql`:
+## Run with local MySQL (without Docker DB)
+1) Install MySQL and create the DB `studentdb`, user `appuser/apppass` (customize as needed).
+2) Run the app with the `mysql` profile:
 ```bash
 SPRING_PROFILES_ACTIVE=mysql mvn spring-boot:run
 ```
 
-## Các đường dẫn
-- `/login` – đăng nhập
-- `/profile` – hồ sơ cá nhân
-- `/password/change` – đổi mật khẩu
-- `/admin/students` – trang admin (chỉ ROLE_ADMIN)
+## Endpoints
+- `/login` – sign in
+- `/profile` – personal profile
+- `/password/change` – change password
+- `/admin/students` – admin page (ROLE_ADMIN only)
 - `/swagger-ui.html` – Swagger UI
-- `/healthz` – Health check
+- `/healthz` – health check
+
+# Run with Docker
+
+## Build & run with Compose
+```bash
+docker compose up --build
+```
+
+App listens on http://localhost:8080
+
+Default admin: **admin / 123456**
+
+## Build standalone image
+```bash
+docker build -t student-mgr:local .
+docker run --rm -p 8080:8080 student-mgr:local
+```
+
+## Switch to MySQL (optional)
+1. Start MySQL service in `docker-compose.yml` (uncomment the mysql section & volume).
+2. Update `src/main/resources/application.yml` datasource to MySQL and add dependency `mysql-connector-j` in `pom.xml`.
